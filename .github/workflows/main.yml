@@ -1,0 +1,31 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # or use 'master' if that's your branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_KEY }}" > ~/.ssh/your-key.pem
+        chmod 600 ~/.ssh/your-key.pem
+
+    - name: SSH into EC2 and Deploy
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/your-key.pem ec2-user@43.204.212.131 << 'EOF'
+          cd /home/ec2-user/devops-webapp
+          git pull origin main
+          docker stop $(docker ps -q) || true
+          docker rm $(docker ps -a -q) || true
+          docker build -t devops-webapp .
+          docker run -d -p 8080:80 devops-webapp
+        EOF

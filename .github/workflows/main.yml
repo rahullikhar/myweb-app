@@ -22,10 +22,23 @@ jobs:
     - name: SSH into EC2 and Deploy
       run: |
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/your-key.pem ec2-user@43.204.212.131 << 'EOF'
+          # Add the safe directory for Git
+          git config --global --add safe.directory /home/ec2-user
+          
+          # Start Docker service
+          sudo service docker start
+          
+          # Navigate to the app directory
           cd /home/ec2-user/devops-webapp
+          
+          # Pull the latest code
           git pull origin main
+          
+          # Stop and remove existing containers
           docker stop $(docker ps -q) || true
           docker rm $(docker ps -a -q) || true
+          
+          # Build and run the new container
           docker build -t devops-webapp .
           docker run -d -p 8080:80 devops-webapp
         EOF
